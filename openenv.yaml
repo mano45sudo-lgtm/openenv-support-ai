@@ -1,0 +1,14 @@
+name: support-triage-env
+description: AI customer support simulation environment
+version: 1.0
+
+entrypoint: env.environment:SupportEnv
+
+observation_model: env.models.Observation
+action_model: env.models.Action
+reward_model: env.models.Reward
+
+tasks:
+  - name: classification_easy
+  - name: resolution_medium
+  - name: full_lifecycle_hard

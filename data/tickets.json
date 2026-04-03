@@ -1,0 +1,9 @@
+[
+  {
+    "id": "T1",
+    "message": "I was charged twice",
+    "tier": "premium",
+    "sentiment": "angry",
+    "category": "billing"
+  }
+]
