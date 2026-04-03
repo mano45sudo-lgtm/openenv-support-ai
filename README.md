@@ -1,3 +1,12 @@
+---
+title: OpenEnv Support AI
+emoji: 🤖
+colorFrom: blue
+colorTo: green
+sdk: docker
+pinned: false
+---
+
 # Support Triage OpenEnv
 
 ## Overview
