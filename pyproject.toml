@@ -1,0 +1,17 @@
+[project]
+name = "openenv-support-ai"
+version = "0.1.0"
+description = "Customer support simulation environment"
+authors = [{ name = "Your Name" }]
+dependencies = [
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+    "openenv-core>=0.2.0"
+]
+
+[project.scripts]
+server = "server.app:main"
+
+[tool.openenv]
+env_class = "env.environment.SupportEnv"
