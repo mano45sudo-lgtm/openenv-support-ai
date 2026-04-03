@@ -28,11 +28,11 @@ class SupportEnv:
     def step(self, action: Action):
         ticket = self.state_data["ticket"]
 
-        # compute step reward
+        # 🔥 UPDATED: pass full ticket (not just category)
         score, reason = compute_reward(
             self.state_data,
             action,
-            ticket["category"]
+            ticket
         )
 
         # update state
@@ -48,9 +48,9 @@ class SupportEnv:
         if self.state_data["time_waiting"] > 5:
             done = True  # prevent infinite loops
 
-        # final grading
+        # 🔥 UPDATED: pass ticket to grader
         if done:
-            final_score = grade_episode(self.state_data["actions"])
+            final_score = grade_episode(self.state_data["actions"], ticket)
             score += final_score
             reason += f" | Final Score Bonus: {final_score}"
 
@@ -73,5 +73,9 @@ class SupportEnv:
             customer_tier=t["tier"],
             sentiment=t["sentiment"],
             time_waiting=self.state_data["time_waiting"],
-            previous_actions=self.state_data["actions"]
+            previous_actions=self.state_data["actions"],
+
+            # 🔥 NEW FIELDS (CRITICAL)
+            sla_remaining=t["sla"] - self.state_data["time_waiting"],
+            difficulty=t["difficulty"]
         )

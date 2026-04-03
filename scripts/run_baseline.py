@@ -10,15 +10,26 @@ total_score = 0
 while not done:
     msg = obs.customer_message.lower()
 
-    # step 1: classify
-    if "charged" in msg and "classify" not in obs.previous_actions:
-        action = Action(action_type="classify", category="billing")
+    # STEP 1 — CLASSIFY
+    if "classify" not in obs.previous_actions:
+        if any(word in msg for word in ["charge", "charged", "refund", "billing", "payment"]):
+            action = Action(action_type="classify", category="billing")
 
-    # step 2: respond
+        elif any(word in msg for word in ["crash", "error", "bug", "issue"]):
+            action = Action(action_type="classify", category="technical")
+
+        else:
+            action = Action(action_type="classify", category="general")
+
+    # STEP 2 — ESCALATE (ONLY FOR TECHNICAL)
+    elif "technical" in msg and "escalate" not in obs.previous_actions:
+        action = Action(action_type="escalate")
+
+    # STEP 3 — REPLY (ONLY ONCE)
     elif "reply" not in obs.previous_actions:
-        action = Action(action_type="reply", content="We are checking your issue")
+        action = Action(action_type="reply", content="We are resolving your issue.")
 
-    # step 3: close
+    # STEP 4 — CLOSE (FORCE EXIT)
     else:
         action = Action(action_type="close")
 

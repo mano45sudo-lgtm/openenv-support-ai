@@ -4,6 +4,26 @@
     "message": "I was charged twice",
     "tier": "premium",
     "sentiment": "angry",
-    "category": "billing"
+    "category": "billing",
+    "difficulty": "easy",
+    "sla": 2
+  },
+  {
+    "id": "T2",
+    "message": "App crashes when I open it",
+    "tier": "free",
+    "sentiment": "neutral",
+    "category": "technical",
+    "difficulty": "medium",
+    "sla": 3
+  },
+  {
+    "id": "T3",
+    "message": "How to upgrade my plan?",
+    "tier": "free",
+    "sentiment": "happy",
+    "category": "general",
+    "difficulty": "hard",
+    "sla": 4
   }
 ]
