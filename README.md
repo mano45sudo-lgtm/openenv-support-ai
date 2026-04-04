@@ -11,17 +11,17 @@ pinned: false
 
 ## Overview
 
-This project implements a realistic customer support environment using the OpenEnv standard. It simulates how AI agents process support tickets through classification, response generation, escalation, and resolution.
+This project implements a realistic customer support environment using the OpenEnv standard. It simulates how AI agents process support tickets through classification, response generation, escalation to specialist teams, and final resolution.
 
-The environment is designed to evaluate multi-step reasoning, decision quality, and the ability to operate under real-world constraints such as SLA deadlines and customer expectations.
+The environment is designed to evaluate multi-step reasoning, decision quality, and the ability to operate under real-world constraints such as SLA deadlines, customer satisfaction, and trust dynamics.
 
 ---
 
 ## Motivation
 
-Customer support is one of the most widely deployed AI use cases, yet most evaluation setups simplify the problem to single-step classification.
+Customer support is one of the most widely deployed AI applications, yet most evaluation setups reduce it to simple classification tasks.
 
-This environment introduces a more realistic setup by modeling:
+This environment models a more realistic system by introducing:
 
 * Sequential decision-making
 * Delayed effects of actions
@@ -35,7 +35,7 @@ This environment introduces a more realistic setup by modeling:
 
 ### Observation Space
 
-Each step returns structured information:
+Each step returns structured data:
 
 * `ticket_id`
 * `customer_message`
@@ -47,8 +47,8 @@ Each step returns structured information:
 Additional signals:
 
 * `conversation_history` — full interaction trace
-* `sla_remaining` — time before SLA violation
-* `priority` — ticket urgency
+* `sla_remaining` — remaining time before SLA violation
+* `priority` — urgency level
 * `difficulty` — task complexity
 * `trust_score` — long-term customer confidence
 
@@ -60,7 +60,7 @@ Agents can perform:
 
 * `classify` → Identify ticket category
 * `reply` → Respond to customer
-* `escalate` → Route to specialist
+* `escalate` → Route to specialist team
 * `close` → Close the ticket
 
 ---
@@ -69,13 +69,13 @@ Agents can perform:
 
 ### Specialist Escalation
 
-Escalation triggers a simulated specialist response instead of ending the episode. This models internal workflows where issues are resolved by different teams before closure.
+Escalation triggers a simulated specialist response instead of ending the episode. This models real internal workflows where issues are resolved by dedicated teams before closure.
 
 ---
 
 ### Customer Interaction Dynamics
 
-Customers respond to agent actions with varying feedback. This introduces uncertainty and requires adaptive strategies rather than fixed policies.
+Customers respond dynamically to agent actions. Responses vary across steps, introducing uncertainty and requiring adaptive strategies.
 
 ---
 
@@ -92,7 +92,7 @@ Two behavioral metrics are tracked:
 * **Satisfaction** — short-term response quality
 * **Trust Score** — long-term relationship signal
 
-Both metrics evolve over time and influence rewards.
+These evolve throughout the episode and directly influence rewards.
 
 ---
 
@@ -100,9 +100,9 @@ Both metrics evolve over time and influence rewards.
 
 The environment penalizes:
 
-* Repetitive actions
-* Premature closures
-* Ignoring escalation when required
+* Repetitive or redundant actions
+* Premature closure
+* Ignoring required escalation
 * Inefficient workflows
 
 ---
@@ -119,7 +119,7 @@ The environment penalizes:
 
 ## Reward Design
 
-The reward function is dense and reflects real operational metrics:
+The reward function is dense and reflects real operational signals:
 
 ### Positive signals
 
@@ -154,23 +154,19 @@ Each episode is evaluated based on:
 * Resolution quality
 * Efficiency
 
-The grader is:
-
-* Deterministic
-* Context-aware
-* Non-trivial (not constant scoring)
+The grader is deterministic, context-aware, and produces non-constant scores.
 
 ---
 
 ## Baseline Agent
 
-A baseline agent is provided to demonstrate expected interaction patterns.
+A baseline agent is provided to demonstrate expected behavior.
 
 It performs:
 
 * Keyword-based classification
 * Rule-based escalation decisions
-* Sequential task completion
+* Sequential workflow execution
 
 ### Run baseline
 
@@ -186,7 +182,7 @@ The project includes `inference.py` for evaluation.
 
 It:
 
-* Uses OpenAI-compatible client
+* Uses an OpenAI-compatible client
 * Reads environment variables:
 
   * `OPENAI_API_KEY`
@@ -252,6 +248,7 @@ openenv-support-ai/
 ├── requirements.txt
 ├── openenv.yaml
 ├── inference.py
+├── validate-submission.sh
 └── README.md
 ```
 
@@ -296,7 +293,7 @@ openenv-support-ai/
 
 ## Future Improvements
 
-* Tool usage simulation (e.g. billing API)
+* Tool usage simulation (e.g., billing APIs)
 * Multi-agent workflows (agent + supervisor)
 * Expanded ticket dataset
 * LLM-based response evaluation
@@ -305,4 +302,4 @@ openenv-support-ai/
 
 ## Conclusion
 
-SupportEnv provides a structured and realistic environment for evaluating AI agents in customer support workflows. It combines operational realism with efficient execution, making it suitable for both benchmarking and applied research.
+SupportEnv provides a structured and realistic environment for evaluating AI agents in customer support workflows. It combines operational realism with efficient execution, making it suitable for benchmarking and applied research.
