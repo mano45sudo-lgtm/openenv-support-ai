@@ -10,13 +10,12 @@ class Observation(BaseModel):
     time_waiting: int
     previous_actions: List[str]
 
-    # 🔥 NEW FIELDS (IMPORTANT)
+    # 🔥 REAL-WORLD FEATURES
     sla_remaining: int
     difficulty: str
     conversation_history: List[str]
-    sla_remaining: int
     priority: str
-    difficulty: str
+    trust_score: float   # 🔥 STEP 2 ADDED
 
 
 class Action(BaseModel):

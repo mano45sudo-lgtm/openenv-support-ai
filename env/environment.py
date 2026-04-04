@@ -24,6 +24,7 @@ class SupportEnv:
             "conversation": [],
             "sla_remaining": (3 if ticket["tier"] == "premium" else 5) + random.choice([0, 1]),
             "satisfaction": 1.0,
+            "trust_score": 1.0,
             "resolved": False
         }
 
@@ -53,6 +54,22 @@ class SupportEnv:
         if action.content:
             self.state_data["conversation"].append(action.content)
 
+        # 🔥 SPECIALIST HANDLING
+        if action.action_type == "escalate":
+            specialist_responses = {
+                "technical": "Engineering team has fixed the issue.",
+                "billing": "Billing correction has been applied.",
+                "account": "Account access has been restored."
+            }
+
+            specialist_reply = specialist_responses.get(
+                ticket["category"],
+                "Issue resolved by specialist team."
+            )
+
+            self.state_data["conversation"].append(specialist_reply)
+            self.state_data["resolved"] = True
+
         # 🔥 DYNAMIC CUSTOMER RESPONSE
         if action.action_type == "reply":
             responses = [
@@ -72,6 +89,14 @@ class SupportEnv:
         elif action.action_type == "escalate":
             self.state_data["satisfaction"] += 0.2
 
+        # 🔥 TRUST SCORE
+        if action.action_type == "reply":
+            self.state_data["trust_score"] += 0.05
+        elif action.action_type == "escalate":
+            self.state_data["trust_score"] += 0.1
+        elif action.action_type == "close" and not self.state_data["resolved"]:
+            self.state_data["trust_score"] -= 0.4
+
         # 🔥 ACTION CONSEQUENCES
         if action.action_type == "classify" and action.category != ticket["category"]:
             self.state_data["satisfaction"] -= 0.2
@@ -87,13 +112,14 @@ class SupportEnv:
             score -= 0.3
             reason += " | Closed without resolution"
 
-        # 🔥 ANTI-EXPLOIT (loop detection)
+        # 🔥 ANTI-EXPLOIT
         if self.state_data["actions"].count("classify") > 2:
             score -= 0.3
             reason += " | Repeated classification penalty"
 
-        # clamp satisfaction
+        # 🔥 CLAMP VALUES
         self.state_data["satisfaction"] = max(0.0, min(1.5, self.state_data["satisfaction"]))
+        self.state_data["trust_score"] = max(0.0, min(1.5, self.state_data["trust_score"]))
 
         done = False
 
@@ -102,7 +128,7 @@ class SupportEnv:
             done = True
 
         if self.state_data["time_waiting"] > 6 or self.state_data["satisfaction"] <= 0:
-            done = True  # prevent loops / unhappy user
+            done = True
 
         # 🔹 Final grading
         if done:
@@ -135,5 +161,6 @@ class SupportEnv:
             conversation_history=self.state_data["conversation"],
             sla_remaining=self.state_data["sla_remaining"],
             priority=t.get("priority", "medium"),
-            difficulty=t.get("difficulty", "easy")
+            difficulty=t.get("difficulty", "easy"),
+            trust_score=self.state_data["trust_score"]   # 🔥 FINAL FIX
         )
