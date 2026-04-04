@@ -13,14 +13,16 @@ class SupportEnv:
         self.state_data = None
 
     def reset(self):
-        # cycle through tasks
         ticket = self.tickets[self.index % len(self.tickets)]
         self.index += 1
 
         self.state_data = {
             "ticket": ticket,
             "time_waiting": 0,
-            "actions": []
+            "actions": [],
+            "conversation": [],
+            "sla_remaining": 3 if ticket["tier"] == "premium" else 5,
+            "satisfaction": 1.0
         }
 
         return self._get_observation()
@@ -28,27 +30,48 @@ class SupportEnv:
     def step(self, action: Action):
         ticket = self.state_data["ticket"]
 
-        # 🔥 UPDATED: pass full ticket (not just category)
+        # 🔹 Compute reward
         score, reason = compute_reward(
             self.state_data,
             action,
             ticket
         )
 
-        # update state
+        # 🔹 Update actions
         self.state_data["actions"].append(action.action_type)
         self.state_data["time_waiting"] += 1
 
+        # 🔥 SLA LOGIC
+        self.state_data["sla_remaining"] -= 1
+        if self.state_data["sla_remaining"] < 0:
+            score -= 0.5
+            reason += " | SLA violated"
+
+        # 🔥 CONVERSATION TRACKING
+        if action.content:
+            self.state_data["conversation"].append(action.content)
+
+        # 🔥 SATISFACTION MODEL
+        if action.action_type == "classify":
+            self.state_data["satisfaction"] -= 0.05
+        elif action.action_type == "reply":
+            self.state_data["satisfaction"] += 0.1
+        elif action.action_type == "escalate":
+            self.state_data["satisfaction"] += 0.2
+
+        # clamp satisfaction
+        self.state_data["satisfaction"] = max(0.0, min(1.5, self.state_data["satisfaction"]))
+
         done = False
 
-        # end conditions
+        # 🔹 End conditions
         if action.action_type == "close":
             done = True
 
-        if self.state_data["time_waiting"] > 5:
+        if self.state_data["time_waiting"] > 6:
             done = True  # prevent infinite loops
 
-        # 🔥 UPDATED: pass ticket to grader
+        # 🔹 Final grading
         if done:
             final_score = grade_episode(self.state_data["actions"], ticket)
             score += final_score
@@ -75,7 +98,9 @@ class SupportEnv:
             time_waiting=self.state_data["time_waiting"],
             previous_actions=self.state_data["actions"],
 
-            # 🔥 NEW FIELDS (CRITICAL)
-            sla_remaining=t["sla"] - self.state_data["time_waiting"],
-            difficulty=t["difficulty"]
+            # 🔥 NEW REAL-WORLD FEATURES
+            conversation_history=self.state_data["conversation"],
+            sla_remaining=self.state_data["sla_remaining"],
+            priority=t.get("priority", "medium"),
+            difficulty=t.get("difficulty", "easy")
         )

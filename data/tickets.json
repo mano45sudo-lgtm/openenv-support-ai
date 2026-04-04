@@ -5,25 +5,25 @@
     "tier": "premium",
     "sentiment": "angry",
     "category": "billing",
-    "difficulty": "easy",
-    "sla": 2
+    "priority": "high",
+    "difficulty": "easy"
   },
   {
     "id": "T2",
-    "message": "App crashes when I open it",
-    "tier": "free",
-    "sentiment": "neutral",
+    "message": "App crashes when I login",
+    "tier": "basic",
+    "sentiment": "frustrated",
     "category": "technical",
-    "difficulty": "medium",
-    "sla": 3
+    "priority": "medium",
+    "difficulty": "medium"
   },
   {
     "id": "T3",
-    "message": "How to upgrade my plan?",
-    "tier": "free",
-    "sentiment": "happy",
-    "category": "general",
-    "difficulty": "hard",
-    "sla": 4
+    "message": "My account is locked and I need urgent access",
+    "tier": "premium",
+    "sentiment": "urgent",
+    "category": "account",
+    "priority": "critical",
+    "difficulty": "hard"
   }
 ]

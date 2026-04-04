@@ -13,6 +13,10 @@ class Observation(BaseModel):
     # 🔥 NEW FIELDS (IMPORTANT)
     sla_remaining: int
     difficulty: str
+    conversation_history: List[str]
+    sla_remaining: int
+    priority: str
+    difficulty: str
 
 
 class Action(BaseModel):
