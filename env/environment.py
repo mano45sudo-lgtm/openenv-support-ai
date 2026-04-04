@@ -1,4 +1,5 @@
 import json
+import random
 from env.models import Observation, Action, Reward
 from env.reward import compute_reward
 from env.graders import grade_episode
@@ -21,8 +22,9 @@ class SupportEnv:
             "time_waiting": 0,
             "actions": [],
             "conversation": [],
-            "sla_remaining": 3 if ticket["tier"] == "premium" else 5,
-            "satisfaction": 1.0
+            "sla_remaining": (3 if ticket["tier"] == "premium" else 5) + random.choice([0, 1]),
+            "satisfaction": 1.0,
+            "resolved": False
         }
 
         return self._get_observation()
@@ -51,6 +53,17 @@ class SupportEnv:
         if action.content:
             self.state_data["conversation"].append(action.content)
 
+        # 🔥 DYNAMIC CUSTOMER RESPONSE
+        if action.action_type == "reply":
+            responses = [
+                "This still doesn't solve my issue.",
+                "Thanks, but I need more help.",
+                "Okay, that makes sense.",
+                "This is urgent, please resolve quickly!"
+            ]
+            customer_reply = random.choice(responses)
+            self.state_data["conversation"].append(customer_reply)
+
         # 🔥 SATISFACTION MODEL
         if action.action_type == "classify":
             self.state_data["satisfaction"] -= 0.05
@@ -58,6 +71,26 @@ class SupportEnv:
             self.state_data["satisfaction"] += 0.1
         elif action.action_type == "escalate":
             self.state_data["satisfaction"] += 0.2
+
+        # 🔥 ACTION CONSEQUENCES
+        if action.action_type == "classify" and action.category != ticket["category"]:
+            self.state_data["satisfaction"] -= 0.2
+
+        if action.action_type == "close" and "reply" not in self.state_data["actions"]:
+            self.state_data["satisfaction"] -= 0.3
+
+        # 🔥 RESOLUTION LOGIC
+        if action.action_type == "reply" and ticket["category"] in ["billing", "general"]:
+            self.state_data["resolved"] = True
+
+        if action.action_type == "close" and not self.state_data["resolved"]:
+            score -= 0.3
+            reason += " | Closed without resolution"
+
+        # 🔥 ANTI-EXPLOIT (loop detection)
+        if self.state_data["actions"].count("classify") > 2:
+            score -= 0.3
+            reason += " | Repeated classification penalty"
 
         # clamp satisfaction
         self.state_data["satisfaction"] = max(0.0, min(1.5, self.state_data["satisfaction"]))
@@ -68,8 +101,8 @@ class SupportEnv:
         if action.action_type == "close":
             done = True
 
-        if self.state_data["time_waiting"] > 6:
-            done = True  # prevent infinite loops
+        if self.state_data["time_waiting"] > 6 or self.state_data["satisfaction"] <= 0:
+            done = True  # prevent loops / unhappy user
 
         # 🔹 Final grading
         if done:
@@ -98,7 +131,7 @@ class SupportEnv:
             time_waiting=self.state_data["time_waiting"],
             previous_actions=self.state_data["actions"],
 
-            # 🔥 NEW REAL-WORLD FEATURES
+            # 🔥 Enhanced observation
             conversation_history=self.state_data["conversation"],
             sla_remaining=self.state_data["sla_remaining"],
             priority=t.get("priority", "medium"),
