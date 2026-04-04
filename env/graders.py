@@ -53,4 +53,18 @@ def grade_episode(actions, ticket):
     if difficulty == "hard":
         score += 0.1
 
+    # 🔥 ================= NEW ADDITION =================
+
+    # 🔥 TRAJECTORY BONUS (optimal workflow sequence)
+    ideal_flow = ["classify", "reply", "escalate", "close"]
+
+    if actions[:len(ideal_flow)] == ideal_flow:
+        score += 0.2
+
+    # 🔥 PARTIAL FLOW BONUS (encourage good progression)
+    if actions[:2] == ["classify", "reply"]:
+        score += 0.1
+
+    # 🔥 ================= END ADDITION =================
+
     return max(0.0, min(score, 1.0))

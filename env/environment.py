@@ -40,6 +40,48 @@ class SupportEnv:
             ticket
         )
 
+        # 🔥 ================= NEW LOGIC START =================
+
+        actions = self.state_data["actions"]
+
+        # 🔥 EARLY WRONG ACTION PENALTY
+        if len(actions) == 0 and action.action_type != "classify":
+            score -= 0.3
+            reason += " | Must classify first"
+
+        # 🔥 WORKFLOW ORDER ENFORCEMENT
+        if action.action_type == "reply" and "classify" not in actions:
+            score -= 0.3
+            reason += " | Reply before classification"
+
+        if action.action_type == "escalate" and "reply" not in actions:
+            score -= 0.2
+            reason += " | Escalation before reply"
+
+        if action.action_type == "close" and "reply" not in actions:
+            score -= 0.4
+            reason += " | Closed without handling"
+
+        # 🔥 NEXT BEST ACTION REWARD
+        if len(actions) == 0 and action.action_type == "classify":
+            score += 0.2
+            reason += " | Good start"
+
+        elif actions == ["classify"] and action.action_type == "reply":
+            score += 0.3
+            reason += " | Good progression"
+
+        elif actions == ["classify", "reply"] and action.action_type in ["escalate", "close"]:
+            score += 0.3
+            reason += " | Good decision"
+
+        # 🔥 STRONG LOOP PREVENTION
+        if actions.count(action.action_type) > 0:
+            score -= 0.3
+            reason += f" | Repeated action penalty ({action.action_type})"
+
+        # 🔥 ================= NEW LOGIC END =================
+
         # 🔹 Update actions
         self.state_data["actions"].append(action.action_type)
         self.state_data["time_waiting"] += 1
@@ -112,10 +154,15 @@ class SupportEnv:
             score -= 0.3
             reason += " | Closed without resolution"
 
-        # 🔥 ANTI-EXPLOIT
+        # 🔥 ANTI-EXPLOIT (existing kept)
         if self.state_data["actions"].count("classify") > 2:
             score -= 0.3
             reason += " | Repeated classification penalty"
+
+        # 🔥 EXTRA STEP PRESSURE
+        if self.state_data["time_waiting"] > 4:
+            score -= 0.2
+            reason += " | Too many steps"
 
         # 🔥 CLAMP VALUES
         self.state_data["satisfaction"] = max(0.0, min(1.5, self.state_data["satisfaction"]))
@@ -162,5 +209,5 @@ class SupportEnv:
             sla_remaining=self.state_data["sla_remaining"],
             priority=t.get("priority", "medium"),
             difficulty=t.get("difficulty", "easy"),
-            trust_score=self.state_data["trust_score"]   # 🔥 FINAL FIX
+            trust_score=self.state_data["trust_score"]
         )
