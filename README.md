@@ -199,6 +199,57 @@ Outputs structured logs:
 
 ---
 
+## Validation (Pre-Submission Check)
+
+A validation script is included to verify that the environment meets all submission requirements.
+
+This script checks:
+
+* Hugging Face Space availability (`/reset` endpoint)
+* Docker build success
+* OpenEnv compliance
+* Baseline execution
+
+### Run validation
+
+```bash
+bash validate-submission.sh https://mano678-openenv-support-ai.hf.space
+```
+
+---
+
+### Expected Output
+
+```text
+========================================
+  OpenEnv Submission Validator
+========================================
+[Step 1] Pinging HF Space...
+PASSED -- HF Space is live and responds to /reset
+
+[Step 2] Building Docker image...
+PASSED -- Docker build successful
+
+[Step 3] Running inference script...
+PASSED -- Inference completed successfully
+
+ALL CHECKS PASSED
+```
+
+---
+
+### Failure Example
+
+```text
+FAILED -- HF Space /reset returned HTTP 503
+Hint: Make sure your Space is running
+```
+
+---
+
+This script ensures the environment is fully functional before submission and helps identify deployment or configuration issues early.
+
+
 ## Docker Setup
 
 ### Build
