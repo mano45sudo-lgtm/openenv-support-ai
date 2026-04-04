@@ -1,44 +1,42 @@
 ---
+
 title: OpenEnv Support AI
 emoji: 🤖
 colorFrom: blue
 colorTo: green
 sdk: docker
 pinned: false
----
+-------------
 
-# 🧠 OpenEnv Support AI — Real-World Customer Support Simulation
+# OpenEnv Support AI — Customer Support Simulation Environment
 
-## 🚀 Overview
+## Overview
 
-This project implements a **real-world customer support environment** using the OpenEnv standard.
-It simulates how AI agents handle customer tickets involving classification, response, escalation, and resolution.
+This project implements a realistic customer support environment using the OpenEnv standard. It simulates how AI agents process support tickets through classification, response generation, escalation, and resolution.
 
-The environment is designed to evaluate **multi-step reasoning**, **decision-making under constraints**, and **task completion efficiency**.
-
----
-
-## 🎯 Motivation
-
-Modern AI agents are increasingly used in:
-
-* Customer support automation
-* Helpdesk systems
-* SaaS operations
-
-This environment provides a **realistic benchmark** to test such agents in:
-
-* Handling user intent
-* Managing urgency (SLA)
-* Making correct operational decisions
+The environment is designed to evaluate multi-step reasoning, decision quality, and the ability to operate under real-world constraints such as SLA deadlines and customer expectations.
 
 ---
 
-## 🧩 Environment Design
+## Motivation
 
-### 🔹 Observation Space
+Customer support is one of the most widely deployed AI use cases, yet most evaluation setups simplify the problem to single-step classification.
 
-Each step provides structured information:
+This environment introduces a more realistic setup by modeling:
+
+* Sequential decision-making
+* Delayed effects of actions
+* Customer interaction dynamics
+* Internal escalation workflows
+* Business-driven evaluation metrics
+
+---
+
+## Environment Design
+
+### Observation Space
+
+Each step returns structured information:
 
 * `ticket_id`
 * `customer_message`
@@ -46,87 +44,136 @@ Each step provides structured information:
 * `sentiment`
 * `time_waiting`
 * `previous_actions`
-* `sla_remaining`
-* `difficulty`
+
+Additional signals:
+
+* `conversation_history` — full interaction trace
+* `sla_remaining` — time before SLA violation
+* `priority` — ticket urgency
+* `difficulty` — task complexity
+* `trust_score` — long-term customer confidence
 
 ---
 
-### 🔹 Action Space
+### Action Space
 
 Agents can perform:
 
 * `classify` → Identify ticket category
 * `reply` → Respond to customer
-* `escalate` → Forward to higher support
-* `close` → Resolve ticket
+* `escalate` → Route to specialist
+* `close` → Close the ticket
 
 ---
 
-## 🧪 Tasks (Difficulty Levels)
+## Real-World Mechanics
 
-| Level     | Description                                   |
-| --------- | --------------------------------------------- |
-| 🟢 Easy   | Simple classification tasks                   |
-| 🟡 Medium | Requires escalation decisions                 |
-| 🔴 Hard   | Full lifecycle handling under SLA constraints |
+### Specialist Escalation
+
+Escalation triggers a simulated specialist response instead of ending the episode. This models internal workflows where issues are resolved by different teams before closure.
 
 ---
 
-## 🧠 Real-World Features
+### Customer Interaction Dynamics
 
-* ⏱️ **SLA Deadlines** — penalties for delays
-* 📊 **Difficulty Levels** — increasing complexity
-* ⚠️ **Escalation Logic** — required for technical issues
-* 🔁 **Multi-step Workflow** — not single-step decisions
+Customers respond to agent actions with varying feedback. This introduces uncertainty and requires adaptive strategies rather than fixed policies.
 
 ---
 
-## 🏆 Reward Design
+### SLA Constraints
 
-The reward system is **dense and realistic**:
+Each ticket has a limited resolution window. Delays result in penalties and reflect real-world service-level agreements.
 
-### ✅ Positive Rewards
+---
+
+### Satisfaction and Trust
+
+Two behavioral metrics are tracked:
+
+* **Satisfaction** — short-term response quality
+* **Trust Score** — long-term relationship signal
+
+Both metrics evolve over time and influence rewards.
+
+---
+
+### Anti-Exploitation Design
+
+The environment penalizes:
+
+* Repetitive actions
+* Premature closures
+* Ignoring escalation when required
+* Inefficient workflows
+
+---
+
+## Tasks and Difficulty
+
+| Level  | Description                                |
+| ------ | ------------------------------------------ |
+| Easy   | Basic classification and response          |
+| Medium | Multi-step handling with SLA awareness     |
+| Hard   | Requires escalation and correct sequencing |
+
+---
+
+## Reward Design
+
+The reward function is dense and reflects real operational metrics:
+
+### Positive signals
 
 * Correct classification
-* Appropriate escalation
-* Proper response
-* Successful closure
+* Meaningful replies
+* Proper escalation
+* Successful resolution
 
-### ❌ Penalties
+### Penalties
 
-* Wrong classification
-* Ignoring escalation
-* Delays (SLA violations)
-* Inefficient action sequences
+* Incorrect classification
+* Unnecessary or missing escalation
+* SLA violations
+* Premature closure
+
+### Additional signals
+
+* Satisfaction impact
+* Trust score impact
+* Priority handling
+
+A final episode-level grading function outputs a score between 0.0 and 1.0.
 
 ---
 
-## 📏 Evaluation (Grader)
+## Evaluation (Grader)
 
-Each episode is scored between **0.0 → 1.0** based on:
+Each episode is evaluated based on:
 
 * Action correctness
-* Decision quality
 * Workflow completion
+* Resolution quality
 * Efficiency
 
 The grader is:
 
-* Deterministic ✔
-* Context-aware ✔
-* Non-constant ✔
+* Deterministic
+* Context-aware
+* Non-trivial (not constant scoring)
 
 ---
 
-## 🤖 Baseline Agent
+## Baseline Agent
 
-A rule-based agent is provided that:
+A baseline agent is provided to demonstrate expected interaction patterns.
 
-* Performs keyword-based classification
-* Decides escalation based on context
-* Completes tasks in structured steps
+It performs:
 
-### ▶ Run baseline:
+* Keyword-based classification
+* Rule-based escalation decisions
+* Sequential task completion
+
+### Run baseline
 
 ```bash
 python -m scripts.run_baseline
@@ -134,32 +181,61 @@ python -m scripts.run_baseline
 
 ---
 
-## 🐳 Docker Setup
+## Inference (Submission Requirement)
 
-### Build:
+The project includes `inference.py` for evaluation.
+
+It:
+
+* Uses OpenAI-compatible client
+* Reads environment variables:
+
+  * `OPENAI_API_KEY`
+  * `API_BASE_URL`
+  * `MODEL_NAME`
+
+Outputs structured logs:
+
+```
+[START]
+[STEP]
+[END]
+```
+
+---
+
+## Docker Setup
+
+### Build
 
 ```bash
 docker build -t support-env .
 ```
 
-### Run:
+### Run
 
 ```bash
-docker run support-env
+docker run -p 7860:7860 support-env
 ```
 
 ---
 
-## ☁️ Deployment
+## Deployment
 
-This environment is deployed on Hugging Face Spaces.
+The environment is deployed as a Docker-based Hugging Face Space.
 
-👉 **Live Demo:**
+Endpoints:
+
+* `/reset`
+* `/step`
+* `/state`
+
+Live Space:
 https://huggingface.co/spaces/mano678/openenv-support-ai
 
 ---
 
-## 📦 Project Structure
+## Project Structure
 
 ```
 openenv-support-ai/
@@ -176,58 +252,58 @@ openenv-support-ai/
 ├── Dockerfile
 ├── requirements.txt
 ├── openenv.yaml
+├── inference.py
 └── README.md
 ```
 
 ---
 
-## ✅ OpenEnv Compliance
+## OpenEnv Compliance
 
-* ✔ step(action)
-* ✔ reset()
-* ✔ state()
-* ✔ Typed models (Pydantic)
-* ✔ openenv.yaml
-
----
-
-## 🔁 Reproducibility
-
-* Deterministic environment
-* Consistent baseline scores
-* Fully containerized via Docker
+* step(action)
+* reset()
+* state()
+* Typed models (Pydantic)
+* openenv.yaml
+* Docker-compatible deployment
 
 ---
 
-## 🧠 Key Strengths
+## Reproducibility
+
+* Deterministic grading
+* Stable baseline behavior
+* Fully containerized execution
+
+---
+
+## Key Strengths
 
 * Real-world applicability
-* Multi-step reasoning environment
+* Multi-step interaction design
 * Strong reward shaping
-* Robust grading system
-* Fully deployable and reproducible
+* Trust and satisfaction modeling
+* Resistant to trivial agent exploitation
 
 ---
 
-## 🚀 Future Improvements
+## Limitations
 
-* Multi-ticket queue system
-* Customer satisfaction scoring
-* Tool usage simulation (refund API)
+* Simulated customer responses
+* No external tool integration
+* Domain limited to support workflows
+
+---
+
+## Future Improvements
+
+* Tool usage simulation (e.g. billing API)
+* Multi-agent workflows (agent + supervisor)
+* Expanded ticket dataset
 * LLM-based response evaluation
 
 ---
 
-## 📌 Conclusion
+## Conclusion
 
-This project provides a **high-quality benchmark environment** for evaluating AI agents in realistic customer support workflows.
-
-It balances:
-
-* realism
-* complexity
-* reproducibility
-
-making it suitable for both research and production-level evaluation.
-
----
+SupportEnv provides a structured and realistic environment for evaluating AI agents in customer support workflows. It combines operational realism with efficient execution, making it suitable for both benchmarking and applied research.
