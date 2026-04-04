@@ -1,12 +1,11 @@
 ---
-
 title: OpenEnv Support AI
-emoji: 🤖
+emoji: "🤖"
 colorFrom: blue
 colorTo: green
 sdk: docker
 pinned: false
--------------
+---
 
 # OpenEnv Support AI — Customer Support Simulation Environment
 
