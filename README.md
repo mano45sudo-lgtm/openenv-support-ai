@@ -329,7 +329,7 @@ openenv-support-ai/
 ├── validate-submission.sh
 └── README.md
 
----
+```
 
 ## OpenEnv Compliance
 
