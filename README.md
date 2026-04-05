@@ -51,6 +51,7 @@ Additional signals:
 * `priority` — urgency level
 * `difficulty` — task complexity
 * `trust_score` — long-term customer confidence
+* `active_agent` — currently handling agent (support or specialist)
 
 ---
 
@@ -70,6 +71,30 @@ Agents can perform:
 ### Specialist Escalation
 
 Escalation triggers a simulated specialist response instead of ending the episode. This models real internal workflows where issues are resolved by dedicated teams before closure.
+
+---
+
+### Multi-Agent Workflow (NEW)
+
+The environment simulates a **multi-agent system**:
+
+* Initial handling by a support agent  
+* Escalation transfers control to a specialist agent  
+* Specialist responses directly affect resolution and state  
+
+This reflects real-world customer support pipelines with role-based handling.
+
+---
+
+### Tool Simulation (NEW)
+
+Specialist agents interact with internal system tools:
+
+* Billing → refund processing  
+* Technical → issue fixing  
+* Account → access restoration  
+
+These tools simulate backend systems and produce deterministic outputs that influence rewards and resolution.
 
 ---
 
@@ -127,6 +152,7 @@ The reward function is dense and reflects real operational signals:
 * Meaningful replies
 * Proper escalation
 * Successful resolution
+* Tool-assisted resolution
 
 ### Penalties
 
@@ -291,6 +317,7 @@ openenv-support-ai/
 │   ├── models.py
 │   ├── reward.py
 │   ├── graders.py
+│   ├── tools.py
 │   └── tasks.py
 │
 ├── data/
@@ -301,7 +328,6 @@ openenv-support-ai/
 ├── inference.py
 ├── validate-submission.sh
 └── README.md
-```
 
 ---
 
@@ -329,6 +355,8 @@ openenv-support-ai/
 * Real-world applicability
 * Multi-step interaction design
 * Strong reward shaping
+* Multi-agent workflow simulation
+* Tool-integrated resolution system
 * Trust and satisfaction modeling
 * Resistant to trivial agent exploitation
 
@@ -337,7 +365,6 @@ openenv-support-ai/
 ## Limitations
 
 * Simulated customer responses
-* No external tool integration
 * Domain limited to support workflows
 
 ---
