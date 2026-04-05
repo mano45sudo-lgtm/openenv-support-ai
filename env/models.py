@@ -15,7 +15,10 @@ class Observation(BaseModel):
     difficulty: str
     conversation_history: List[str]
     priority: str
-    trust_score: float   # 🔥 STEP 2 ADDED
+    trust_score: float
+
+    # 🔥 NEW: MULTI-AGENT FIELD
+    active_agent: str
 
 
 class Action(BaseModel):

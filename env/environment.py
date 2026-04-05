@@ -3,6 +3,7 @@ import random
 from env.models import Observation, Action, Reward
 from env.reward import compute_reward
 from env.graders import grade_episode
+from env.tools import process_refund, fix_technical_issue, restore_account
 
 
 class SupportEnv:
@@ -25,12 +26,34 @@ class SupportEnv:
             "sla_remaining": (3 if ticket["tier"] == "premium" else 5) + random.choice([0, 1]),
             "satisfaction": 1.0,
             "trust_score": 1.0,
-            "resolved": False
+            "resolved": False,
+
+            # 🔥 MULTI-AGENT
+            "active_agent": "support",
+            "agent_history": ["support"],
+
+            # 🔥 NEW: DONE FLAG
+            "done": False
         }
 
         return self._get_observation()
+    
 
     def step(self, action: Action):
+
+        # 🔥 HARD SAFETY CHECK (NEW)
+        if self.state_data is None:
+            raise ValueError("Call reset() before step()")
+
+        # 🔥 HARD STOP AFTER DONE (CRITICAL FIX)
+        if self.state_data.get("done", False):
+            return (
+                self._get_observation(),
+                Reward(score=0.0, reason="Episode already finished"),
+                True,
+                {}
+            )
+
         ticket = self.state_data["ticket"]
 
         # 🔹 Compute reward
@@ -76,7 +99,7 @@ class SupportEnv:
             reason += " | Good decision"
 
         # 🔥 STRONG LOOP PREVENTION
-        if actions.count(action.action_type) > 0:
+        if action.action_type in actions:
             score -= 0.3
             reason += f" | Repeated action penalty ({action.action_type})"
 
@@ -94,7 +117,17 @@ class SupportEnv:
 
         # 🔥 CONVERSATION TRACKING
         if action.content:
-            self.state_data["conversation"].append(action.content)
+            self.state_data["conversation"].append(
+                f"[{self.state_data['active_agent']}] {action.content}"
+            )
+
+        # 🔥 MULTI-AGENT HANDOFF
+        if action.action_type == "escalate":
+            self.state_data["active_agent"] = "specialist"
+            self.state_data["agent_history"].append("specialist")
+
+            specialist_note = f"[SPECIALIST] Handling {ticket['category']} issue"
+            self.state_data["conversation"].append(specialist_note)
 
         # 🔥 SPECIALIST HANDLING
         if action.action_type == "escalate":
@@ -112,6 +145,24 @@ class SupportEnv:
             self.state_data["conversation"].append(specialist_reply)
             self.state_data["resolved"] = True
 
+            # 🔥 TOOL SIMULATION
+            tool_result = None
+
+            if ticket["category"] == "billing":
+                tool_result = process_refund(ticket["id"])
+            elif ticket["category"] == "technical":
+                tool_result = fix_technical_issue(ticket["id"])
+            elif ticket["category"] == "account":
+                tool_result = restore_account(ticket["id"])
+
+            if tool_result:
+                self.state_data["conversation"].append(
+                    f"[SYSTEM] {tool_result['message']}"
+                )
+                self.state_data["resolved"] = True
+                score += 0.3
+                reason += " | Tool-assisted resolution"
+
         # 🔥 DYNAMIC CUSTOMER RESPONSE
         if action.action_type == "reply":
             responses = [
@@ -121,7 +172,9 @@ class SupportEnv:
                 "This is urgent, please resolve quickly!"
             ]
             customer_reply = random.choice(responses)
-            self.state_data["conversation"].append(customer_reply)
+            self.state_data["conversation"].append(
+                f"[CUSTOMER] {customer_reply}"
+            )
 
         # 🔥 SATISFACTION MODEL
         if action.action_type == "classify":
@@ -154,7 +207,7 @@ class SupportEnv:
             score -= 0.3
             reason += " | Closed without resolution"
 
-        # 🔥 ANTI-EXPLOIT (existing kept)
+        # 🔥 ANTI-EXPLOIT
         if self.state_data["actions"].count("classify") > 2:
             score -= 0.3
             reason += " | Repeated classification penalty"
@@ -183,6 +236,9 @@ class SupportEnv:
             score += final_score
             reason += f" | Final Score Bonus: {final_score}"
 
+            # 🔥 MARK EPISODE AS DONE (CRITICAL FIX)
+            self.state_data["done"] = True
+
         return (
             self._get_observation(),
             Reward(score=score, reason=reason),
@@ -203,11 +259,10 @@ class SupportEnv:
             sentiment=t["sentiment"],
             time_waiting=self.state_data["time_waiting"],
             previous_actions=self.state_data["actions"],
-
-            # 🔥 Enhanced observation
             conversation_history=self.state_data["conversation"],
             sla_remaining=self.state_data["sla_remaining"],
             priority=t.get("priority", "medium"),
             difficulty=t.get("difficulty", "easy"),
-            trust_score=self.state_data["trust_score"]
+            trust_score=self.state_data["trust_score"],
+            active_agent=self.state_data["active_agent"]
         )
