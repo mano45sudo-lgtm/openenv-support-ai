@@ -4,6 +4,7 @@ from env.models import Observation, Action, Reward
 from env.reward import compute_reward
 from env.graders import grade_episode
 from env.tools import process_refund, fix_technical_issue, restore_account
+from env.tasks import TASKS
 
 
 class SupportEnv:
@@ -15,10 +16,30 @@ class SupportEnv:
         self.state_data = None
 
     def reset(self):
-        ticket = self.tickets[self.index % len(self.tickets)]
+
+        # 🔥 SELECT TASK
+        task_names = list(TASKS.keys())
+        task_name = task_names[self.index % len(task_names)]
+        task = TASKS[task_name]
+
+        # 🔥 FILTER TICKETS
+        filtered_tickets = [
+            t for t in self.tickets
+            if t.get("difficulty", "easy") == task["difficulty"]
+        ]
+
+        # 🔥 FALLBACK
+        if not filtered_tickets:
+            filtered_tickets = self.tickets
+
+        # 🔥 FIXED: ALWAYS ASSIGN TICKET OUTSIDE IF
+        ticket = filtered_tickets[self.index % len(filtered_tickets)]
+
         self.index += 1
 
+        # 🔥 FIXED: state_data always initialized
         self.state_data = {
+            "task": task_name,
             "ticket": ticket,
             "time_waiting": 0,
             "actions": [],
@@ -37,15 +58,15 @@ class SupportEnv:
         }
 
         return self._get_observation()
-    
+
 
     def step(self, action: Action):
 
-        # 🔥 HARD SAFETY CHECK (NEW)
+        # 🔥 HARD SAFETY CHECK
         if self.state_data is None:
             raise ValueError("Call reset() before step()")
 
-        # 🔥 HARD STOP AFTER DONE (CRITICAL FIX)
+        # 🔥 HARD STOP AFTER DONE
         if self.state_data.get("done", False):
             return (
                 self._get_observation(),
@@ -62,8 +83,6 @@ class SupportEnv:
             action,
             ticket
         )
-
-        # 🔥 ================= NEW LOGIC START =================
 
         actions = self.state_data["actions"]
 
@@ -103,9 +122,7 @@ class SupportEnv:
             score -= 0.3
             reason += f" | Repeated action penalty ({action.action_type})"
 
-        # 🔥 ================= NEW LOGIC END =================
-
-        # 🔹 Update actions
+        # 🔹 Update state
         self.state_data["actions"].append(action.action_type)
         self.state_data["time_waiting"] += 1
 
@@ -223,7 +240,6 @@ class SupportEnv:
 
         done = False
 
-        # 🔹 End conditions
         if action.action_type == "close":
             done = True
 
@@ -232,14 +248,18 @@ class SupportEnv:
 
         # 🔹 Final grading
         if done:
-            final_score = grade_episode(self.state_data["actions"], ticket)
+            task_name = self.state_data.get("task", "easy_task")
+            grader = TASKS[task_name]["grader"]
+
+            final_score = grader(self.state_data["actions"], ticket)
 
             score = (score * 0.5) + (final_score * 0.5)
+            score = max(-1.0, min(score, 1.0))
 
             reason += f" | Final Score Bonus: {final_score}"
 
-# 🔥 THIS IS THE MISSING LINE
-        score = max(-1.0, min(score, 1.0))
+            # 🔥 FIX: mark done
+            self.state_data["done"] = True
 
         return (
             self._get_observation(),
@@ -252,6 +272,9 @@ class SupportEnv:
         return self.state_data
 
     def _get_observation(self):
+        if self.state_data is None:
+            raise ValueError("Call reset() first")
+
         t = self.state_data["ticket"]
 
         return Observation(

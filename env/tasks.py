@@ -1,17 +1,24 @@
-TASKS = [
-    {
-        "name": "classification_easy",
+from env.graders import grade_episode
+
+# 🔥 DEFINE TASKS (MANDATORY)
+
+TASKS = {
+    "easy_task": {
+        "description": "Classify and reply to a simple customer query",
         "difficulty": "easy",
-        "description": "Classify simple customer queries"
+        "grader": grade_episode
     },
-    {
-        "name": "resolution_medium",
+
+    "medium_task": {
+        "description": "Handle ticket with correct classification and possible escalation",
         "difficulty": "medium",
-        "description": "Handle escalation and resolution"
+        "grader": grade_episode
     },
-    {
-        "name": "full_lifecycle_hard",
+
+    "hard_task": {
+        "description": "Handle complex issue with SLA, escalation, and correct workflow",
         "difficulty": "hard",
-        "description": "Complete full ticket lifecycle under SLA"
+        "grader": grade_episode
     }
-]
+}
+
