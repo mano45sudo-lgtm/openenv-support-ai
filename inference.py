@@ -6,9 +6,12 @@ from env.environment import SupportEnv
 from env.models import Action
 
 # 🔥 REQUIRED ENV VARIABLES (STRICT — NO FALLBACKS)
-API_BASE_URL = os.environ["API_BASE_URL"]
-MODEL_NAME = os.environ["MODEL_NAME"]
-API_KEY = os.environ["API_KEY"]
+API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co")
+MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+
+if not OPENAI_API_KEY:
+    print("[WARNING] OPENAI_API_KEY not set, using fallback behavior")
 
 MAX_STEPS = 10
 SUCCESS_THRESHOLD = 0.3
@@ -16,7 +19,7 @@ SUCCESS_THRESHOLD = 0.3
 # 🔹 Initialize client (MANDATORY)
 client = OpenAI(
     base_url=API_BASE_URL,
-    api_key=API_KEY
+    api_key=OPENAI_API_KEY
 )
 
 env = SupportEnv()
