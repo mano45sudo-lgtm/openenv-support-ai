@@ -67,5 +67,7 @@ def compute_reward(state, action, ticket):
     if state["resolved"]:
         score += 0.2
         reasons.append("Issue resolved")
+        
+    score = max(-1.0, min(score, 1.0))
 
     return score, ", ".join(reasons)

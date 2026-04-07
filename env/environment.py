@@ -233,11 +233,13 @@ class SupportEnv:
         # 🔹 Final grading
         if done:
             final_score = grade_episode(self.state_data["actions"], ticket)
-            score += final_score
+
+            score = (score * 0.5) + (final_score * 0.5)
+
             reason += f" | Final Score Bonus: {final_score}"
 
-            # 🔥 MARK EPISODE AS DONE (CRITICAL FIX)
-            self.state_data["done"] = True
+# 🔥 THIS IS THE MISSING LINE
+        score = max(-1.0, min(score, 1.0))
 
         return (
             self._get_observation(),
