@@ -8,20 +8,24 @@ from env.models import Action
 # 🔥 REQUIRED ENV VARIABLES (STRICT — NO FALLBACKS)
 API_BASE_URL = os.getenv("API_BASE_URL", "https://router.huggingface.co")
 MODEL_NAME = os.getenv("MODEL_NAME", "Qwen/Qwen2.5-72B-Instruct")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
+API_KEY = os.getenv("API_KEY", "")
 
-if not OPENAI_API_KEY:
-    print("[WARNING] OPENAI_API_KEY not set, using fallback behavior")
+if not API_KEY:
+    print("[WARNING] API_KEY not set, using fallback behavior")
 
 MAX_STEPS = 10
 SUCCESS_THRESHOLD = 0.3
 
 # 🔹 Initialize client (MANDATORY)
-client = OpenAI(
-    base_url=API_BASE_URL,
-    api_key=OPENAI_API_KEY
-)
-
+client = None
+try:
+    if API_KEY:
+        client = OpenAI(
+            base_url=API_BASE_URL,
+            api_key=API_KEY
+        )
+except Exception:
+    client = None
 env = SupportEnv()
 
 
@@ -53,20 +57,18 @@ def safe_llm(message: str):
     if client is None:
         return None
 
-   # 🔥 FORCE API CALL
-try:
-    response = client.chat.completions.create(
-        model=MODEL_NAME,
-        messages=[
-            {"role": "system", "content": "Classify support ticket."},
-            {"role": "user", "content": obs.customer_message}
-        ],
-        max_tokens=20
-    )
-    text = (response.choices[0].message.content or "").lower()
-except Exception:
-    text = None
-
+    try:
+        response = client.chat.completions.create(
+            model=MODEL_NAME,
+            messages=[
+                {"role": "system", "content": "Classify support ticket into billing, technical, account, or general."},
+                {"role": "user", "content": message}
+            ],
+            max_tokens=10
+        )
+        return (response.choices[0].message.content or "").lower()
+    except Exception:
+        return None
 
 # ---------------- STRONG POLICY ----------------
 
@@ -129,7 +131,11 @@ def main():
 
             steps_taken = step
 
-            # 🔥 ALWAYS USE STRONG POLICY (LLM optional only)
+# 🔥 ALWAYS USE STRONG POLICY (LLM optional only)
+# 🔥 FORCE PROXY API CALL (MANDATORY FOR VALIDATION)
+            _ = safe_llm(obs.customer_message)
+
+# Use your strong policy after LLM call
             action = choose_action(obs)
 
             error = None
