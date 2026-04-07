@@ -5,21 +5,19 @@ from openai import OpenAI
 from env.environment import SupportEnv
 from env.models import Action
 
-# 🔥 REQUIRED ENV VARIABLES
-API_BASE_URL = os.getenv("API_BASE_URL") or "https://router.huggingface.co/v1"
-MODEL_NAME = os.getenv("MODEL_NAME") or "Qwen/Qwen2.5-72B-Instruct"
-HF_TOKEN = os.getenv("HF_TOKEN")
+# 🔥 REQUIRED ENV VARIABLES (STRICT — NO FALLBACKS)
+API_BASE_URL = os.environ["API_BASE_URL"]
+MODEL_NAME = os.environ["MODEL_NAME"]
+API_KEY = os.environ["API_KEY"]
 
 MAX_STEPS = 10
 SUCCESS_THRESHOLD = 0.3
 
-# 🔹 Initialize client safely
-client = None
-if HF_TOKEN:
-    try:
-        client = OpenAI(base_url=API_BASE_URL, api_key=HF_TOKEN)
-    except Exception:
-        client = None
+# 🔹 Initialize client (MANDATORY)
+client = OpenAI(
+    base_url=API_BASE_URL,
+    api_key=API_KEY
+)
 
 env = SupportEnv()
 
@@ -52,19 +50,19 @@ def safe_llm(message: str):
     if client is None:
         return None
 
-    try:
-        response = client.chat.completions.create(
-            model=MODEL_NAME,
-            messages=[
-                {"role": "system", "content": "Classify support ticket."},
-                {"role": "user", "content": message}
-            ],
-            max_tokens=50,
-            temperature=0.3
-        )
-        return (response.choices[0].message.content or "").lower()
-    except Exception:
-        return None
+   # 🔥 FORCE API CALL
+try:
+    response = client.chat.completions.create(
+        model=MODEL_NAME,
+        messages=[
+            {"role": "system", "content": "Classify support ticket."},
+            {"role": "user", "content": obs.customer_message}
+        ],
+        max_tokens=20
+    )
+    text = (response.choices[0].message.content or "").lower()
+except Exception:
+    text = None
 
 
 # ---------------- STRONG POLICY ----------------
